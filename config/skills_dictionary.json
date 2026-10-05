@@ -29,5 +29,15 @@
   "Go": ["golang", "go"],
   "MongoDB": ["mongodb"],
   "PostgreSQL": ["postgresql", "postgres"],
-  "MySQL": ["mysql"]
+  "MySQL": ["mysql"],
+  "PySpark": ["pyspark"],
+  "Kubeflow": ["kubeflow"],
+  "OCR": ["ocr", "optical character recognition"],
+  "CNN": ["cnn", "convolutional neural network"],
+  "Computer Vision": ["computer vision"],
+  "Natural Language Processing": ["natural language processing", "nlp"],
+  "Object Detection": ["object detection"],
+  "Algorithms": ["algorithms"],
+  "Data Analysis": ["data analysis"],
+  "Data Science": ["data science"]
 }
