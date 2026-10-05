@@ -1,6 +1,28 @@
-from src.processing.annotation_filter import is_valid_skill_candidate
-from src.processing.cv_skill_adapter import normalize_skill
+import json
+from pathlib import Path
 
+from src.processing.annotation_filter import is_valid_skill_candidate
+
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+DICTIONARY_PATH = BASE_DIR / "config" / "skills_dictionary.json"
+
+
+with open(DICTIONARY_PATH, "r", encoding="utf-8-sig") as f:
+    SKILLS_DICTIONARY = json.load(f)
+
+
+def normalize_skill(skill: str) -> str | None:
+    skill = skill.strip().lower()
+
+    for canonical, aliases in SKILLS_DICTIONARY.items():
+        if skill == canonical.lower():
+            return canonical
+
+        if skill in [alias.lower() for alias in aliases]:
+            return canonical
+
+    return None
 
 def normalize_cv_skills(
     raw_skills: list[str],
