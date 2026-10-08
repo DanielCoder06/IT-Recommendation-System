@@ -34,41 +34,6 @@ def create_tables() -> None:
 
         CREATE INDEX IF NOT EXISTS idx_jobs_posted_date
         ON jobs(posted_date);
-        
-        CREATE TABLE IF NOT EXISTS skills (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            name TEXT NOT NULL UNIQUE,
-
-            category TEXT,
-
-            created_at TEXT NOT NULL
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_skills_category
-        ON skills(category);
-        
-        CREATE TABLE IF NOT EXISTS job_skills (
-            job_id INTEGER NOT NULL,
-            skill_id INTEGER NOT NULL,
-            source TEXT NOT NULL,
-
-            PRIMARY KEY (job_id, skill_id),
-
-            FOREIGN KEY (job_id)
-                REFERENCES jobs(id)
-                ON DELETE CASCADE,
-
-            FOREIGN KEY (skill_id)
-                REFERENCES skills(id)
-                ON DELETE CASCADE
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_job_skills_skill
-        ON job_skills(skill_id);
-
-        CREATE INDEX IF NOT EXISTS idx_job_skills_job
-        ON job_skills(job_id);
         """
     )
 
