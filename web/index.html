@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>IT Job Recommendation</title>
+
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <h1>IT Job Recommendation</h1>
+        <p>CV → Job Semantic Matching</p>
+      </header>
+
+      <section class="dashboard">
+        <div class="stat-card">
+          <h3>Raw Jobs</h3>
+          <p id="raw-jobs">0</p>
+        </div>
+
+        <div class="stat-card">
+          <h3>IT Jobs</h3>
+          <p id="it-jobs">0</p>
+        </div>
+
+        <div class="stat-card">
+          <h3>Database Jobs</h3>
+          <p id="db-jobs">0</p>
+        </div>
+      </section>
+
+      <section class="upload-section">
+        <h2>Upload your CV</h2>
+
+        <input type="file" id="cv-file" accept=".pdf" />
+
+        <button id="analyze-btn">Analyze CV</button>
+      </section>
+
+      <section class="results-section">
+        <h2>Recommended Jobs</h2>
+
+        <div id="results">
+          <p class="empty-message">Upload a CV to see recommended jobs.</p>
+        </div>
+      </section>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
