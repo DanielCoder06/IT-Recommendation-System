@@ -1,190 +1,173 @@
 import json
 from pathlib import Path
 
-from src.processing.cv_extractor import extract_cv_text
-from src.processing.semantic_chunker import chunk_text
-from src.matching.chunk_similarity_matcher import match_cv_chunks_to_jd
-from src.matching.chunk_job_scorer import calculate_job_score
+# --- Import CV Pipeline ---
+from src.processing.cv_structure import read_pdf_lines, split_sections
+from src.processing.cv_chunker import structure_chunk
+from src.processing.semantic_chunker import SemanticChunker
 
+# --- Import JD Pipeline ---
+from src.processing.jd_chunker import chunk_jd_text
+
+# --- Import Matching ---
+from src.matching.chunk_similarity_matcher import match_chunks, encode_chunks
+from src.matching.chunk_job_scorer import calculate_job_score
+from src.processing.job_filter import is_senior_job
+from database.job_repository import get_all_jobs
 
 BASE_DIR = Path(__file__).resolve().parents[2]
-
-CV_PATH = (
-    BASE_DIR
-    / "data"
-    / "external"
-    / "resumes"
-    / "ResumesPDF"
-    / "sample_cv.pdf"
-)
-
+CV_PATH = BASE_DIR / "data" / "HTN-CV.pdf"
+if not CV_PATH.exists():
+    CV_PATH = BASE_DIR / "data" / "external" / "resumes" / "ResumesPDF" / "sample_cv.pdf"
 JOBS_PATH = BASE_DIR / "data" / "filtered_it_jobs.json"
 
 TOP_K = 10
-
-CV_WORDS_PER_CHUNK = 120
 JD_WORDS_PER_CHUNK = 120
-CHUNK_OVERLAP = 30
+EXCLUDE_SENIOR = True  # Đặt True để loại bỏ các job Senior / Lead / Principal / Architect / Manager
+SCORE_TOP_K_REQS = 3  # Đánh giá dựa trên Top-K requirements/responsibilities khớp nhất của JD
 
+# Phương pháp 3: Chỉ giữ lại các section kỹ thuật cốt lõi của CV
+CV_CORE_SECTIONS = {
+    "SKILLS",
+    "PROJECTS",
+    "EXPERIENCE",
+    "WORK EXPERIENCE",
+    "PROFILE",
+    "SUMMARY",
+}
 
 def load_jobs() -> list[dict]:
-    with JOBS_PATH.open(
-        "r",
-        encoding="utf-8",
-    ) as f:
-        return json.load(f)
+    """
+    Ưu tiên đọc trực tiếp từ SQLite Database (Single Source of Truth),
+    fallback sang JSON nếu DB chưa có dữ liệu.
+    """
+    try:
+        db_jobs = get_all_jobs()
+        if db_jobs:
+            return db_jobs
+    except Exception as e:
+        print(f"[Warning] Không thể đọc từ DB ({e}), chuyển sang đọc file JSON.")
 
+    if JOBS_PATH.exists():
+        with JOBS_PATH.open("r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
 
 def main():
     print("=" * 70)
-    print("CV → JOB CHUNK-BASED RECOMMENDATION")
+    print("CV → JOB CHUNK-BASED RECOMMENDATION (SEMANTIC HYBRID)")
     print("=" * 70)
 
     # --------------------------------------------------
-    # 1. Extract CV text
+    # 1. XỬ LÝ CV (Structure-Aware + Semantic Boundary Chunking)
     # --------------------------------------------------
+    # Đọc PDF và bảo toàn cấu trúc layout, font, cột
+    cv_lines = read_pdf_lines(CV_PATH)
+    cv_sections = split_sections(cv_lines)
+    
+    # Trích xuất các Section quan trọng
+    cv_structured_chunks = structure_chunk(cv_sections)
 
-    cv_text = extract_cv_text(
-        str(CV_PATH)
+    # PP 3: Lọc lấy các Section chuyên môn cốt lõi (loại bỏ Languages giao tiếp, Education tổng quát)
+    cv_structured_chunks = [
+        chunk for chunk in cv_structured_chunks
+        if chunk.section in CV_CORE_SECTIONS
+    ]
+
+    # Khởi tạo SemanticChunker tinh chỉnh theo ngữ nghĩa (từ cv_chunking_colab.ipynb)
+    semantic_chunker = SemanticChunker(
+        breakpoint_percentile=70.0,
+        min_distance=0.15,
+        min_chars=120,
+        max_chars=500,
+        window=1,
     )
 
-    print(
-        f"\nCV characters: {len(cv_text)}"
-    )
+    cv_chunks_text = []
+    for section_chunk in cv_structured_chunks:
+        # Cắt theo ngữ nghĩa (Semantic Boundary), giữ header ngữ cảnh
+        sub_chunks = semantic_chunker.chunk_text(
+            section_chunk.text,
+            header=section_chunk.header,
+        )
+        cv_chunks_text.extend(sub_chunks)
 
-    # --------------------------------------------------
-    # 2. Chunk CV
-    # --------------------------------------------------
+    print(f"CV Extracted Core Sections: {len(cv_structured_chunks)}")
+    print(f"CV Final Core Semantic Chunks: {len(cv_chunks_text)}")
 
-    cv_chunks = chunk_text(
-        cv_text,
-        words_per_chunk=CV_WORDS_PER_CHUNK,
-        overlap=CHUNK_OVERLAP,
-    )
-
-    print(
-        f"CV chunks: {len(cv_chunks)}"
-    )
-
-    if not cv_chunks:
+    if not cv_chunks_text:
         print("CV không có dữ liệu để matching.")
         return
 
-    # --------------------------------------------------
-    # 3. Load jobs
-    # --------------------------------------------------
+    # TỐI ƯU HIỆU NĂNG: Encode CV chunks 1 lần duy nhất tại đây (thay vì lặp lại ở mỗi job)
+    cv_embeddings = encode_chunks(cv_chunks_text)
 
+    # --------------------------------------------------
+    # 2. XỬ LÝ JD & MATCHING
+    # --------------------------------------------------
     jobs = load_jobs()
-
-    print(
-        f"Jobs loaded: {len(jobs)}"
-    )
-
-    # --------------------------------------------------
-    # 4. Match CV chunks → JD chunks
-    # --------------------------------------------------
+    if EXCLUDE_SENIOR:
+        jobs = [
+            job for job in jobs
+            if not is_senior_job(job.get("title", ""), job.get("experience", ""))
+        ]
+        print(f"Jobs loaded (Exclude Senior): {len(jobs)}")
+    else:
+        print(f"Jobs loaded: {len(jobs)}")
 
     results = []
 
-    for index, job in enumerate(
-        jobs,
-        start=1,
-    ):
-        jd_text = job.get(
-            "description",
-            "",
+    for index, job in enumerate(jobs, start=1):
+        jd_text = job.get("description", "")
+        
+        # Chia JD kèm nhãn Category
+        jd_chunks_dict = chunk_jd_text(
+            text=jd_text,
+            max_words=JD_WORDS_PER_CHUNK,
+            overlap_units=0
         )
 
-        jd_chunks = chunk_text(
-            jd_text,
-            words_per_chunk=JD_WORDS_PER_CHUNK,
-            overlap=CHUNK_OVERLAP,
-        )
+        # LỌC JD: Chỉ lấy REQUIREMENT và RESPONSIBILITY
+        important_jd_chunks = [
+            chunk["text"] for chunk in jd_chunks_dict 
+            if chunk.get("category") in ["REQUIREMENT", "RESPONSIBILITY"]
+        ]
 
-        if not jd_chunks:
+        if not important_jd_chunks:
             continue
 
-        chunk_matches = match_cv_chunks_to_jd(
-            cv_chunks,
-            jd_chunks,
+        # PP 1: Đổi chiều matching (Mỗi JD Requirement tìm CV Chunk phù hợp nhất)
+        # Sử dụng cv_embeddings đã encode sẵn
+        chunk_matches = match_chunks(
+            query_chunks=important_jd_chunks,
+            candidate_chunks=cv_chunks_text,
+            candidate_embeddings=cv_embeddings,
         )
 
-        score = calculate_job_score(
-            chunk_matches
-        )
+        # PP 2: Tính điểm dựa trên Top-K requirements khớp nhất của JD
+        score = calculate_job_score(chunk_matches, top_k=SCORE_TOP_K_REQS)
 
-        results.append(
-            {
-                "job_id": index,
-                "title": job["title"],
-                "company": job["company"],
-                "location": job.get("location"),
-                "url": job.get("url"),
-                "jd_chunks": jd_chunks,
-                "matches": chunk_matches,
-                "job_score": score["job_score"],
-                "coverage": score["coverage"],
-                "chunk_scores": score["chunk_scores"],
-            }
-        )
+        results.append({
+            "job_id": index,
+            "title": job["title"],
+            "company": job["company"],
+            "location": job.get("location"),
+            "url": job.get("url"),
+            "job_score": score["job_score"],
+        })
 
     # --------------------------------------------------
-    # 5. Rank jobs
+    # 3. RANKING & HIỂN THỊ
     # --------------------------------------------------
-
-    ranked_jobs = sorted(
-        results,
-        key=lambda job: job["job_score"],
-        reverse=True,
-    )
-
-    # --------------------------------------------------
-    # 6. Display
-    # --------------------------------------------------
+    ranked_jobs = sorted(results, key=lambda job: job["job_score"], reverse=True)
 
     print("\n" + "=" * 70)
-    print(f"TOP {TOP_K} JOBS")
+    print(f"TOP {TOP_K} JOBS MATCHED")
     print("=" * 70)
 
-    for rank, job in enumerate(
-        ranked_jobs[:TOP_K],
-        start=1,
-    ):
-        print(
-            f"\n{rank}. "
-            f"{job['company']} | "
-            f"{job['title']}"
-        )
-
-        print(
-            f"Score: {job['job_score']:.4f} | "
-            f"Coverage: {job['coverage']:.2%}"
-        )
-
-        print("\nCV → JD chunk matches:")
-
-        for index, match in enumerate(
-            job["matches"],
-            start=1,
-        ):
-            print(
-                f"\n  CV chunk {index}"
-                f" → JD chunk"
-            )
-
-            print(
-                f"  Similarity: "
-                f"{match['similarity']:.4f}"
-            )
-
-            print(
-                f"  CV: {match['cv_chunk']}"
-            )
-
-            print(
-                f"  JD: {match['jd_chunk']}"
-            )
-
+    for rank, job in enumerate(ranked_jobs[:TOP_K], start=1):
+        print(f"\n{rank}. {job['company']} | {job['title']}")
+        print(f"   Score: {job['job_score']:.4f}")
 
 if __name__ == "__main__":
     main()
