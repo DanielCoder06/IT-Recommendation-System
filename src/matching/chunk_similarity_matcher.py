@@ -23,17 +23,19 @@ def encode_chunks(chunks: list[str]) -> np.ndarray:
 def match_chunks(
     query_chunks: list[str],
     candidate_chunks: list[str],
+    candidate_embeddings: np.ndarray | None = None,
 ) -> list[dict]:
     """
-    Tìm candidate chunk có similarity cao nhất
-    cho từng query chunk.
+    Tìm candidate chunk có similarity cao nhất cho từng query chunk.
+    Hỗ trợ truyền trước candidate_embeddings để tối ưu hiệu năng (tránh re-encode lặp lại).
     """
 
     if not query_chunks or not candidate_chunks:
         return []
 
     query_embeddings = encode_chunks(query_chunks)
-    candidate_embeddings = encode_chunks(candidate_chunks)
+    if candidate_embeddings is None:
+        candidate_embeddings = encode_chunks(candidate_chunks)
 
     results = []
 
