@@ -3,7 +3,7 @@ from src.processing.cv_structure import (
     split_sections,
 )
 
-pdf_path = r"data\MyCV-VoCaoThanhDat.pdf"
+pdf_path = r"data\hTN-CV.pdf"
 
 lines = read_pdf_lines(pdf_path)
 sections = split_sections(lines)
