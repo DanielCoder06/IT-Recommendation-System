@@ -57,3 +57,51 @@ def test_invalid_overlap():
             words_per_chunk=3,
             overlap=3,
         )
+
+
+def test_split_text_into_units_bullets():
+    from src.processing.semantic_chunker import split_text_into_units
+
+    text = """
+    • Led a team of four engineers to build a resume screening engine.
+    • Fine-tuned transformer models for NER on 200k documents.
+    • Designed a vector search service with FAISS and FastAPI.
+    """
+    units = split_text_into_units(text)
+    assert len(units) == 3
+    assert "Led a team" in units[0]
+    assert "Fine-tuned" in units[1]
+    assert "Designed a vector" in units[2]
+
+
+def test_semantic_chunker_basic():
+    import numpy as np
+    from src.processing.semantic_chunker import SemanticChunker
+
+    # Mock embedding function: vector based on keywords
+    def mock_embed(texts):
+        vectors = []
+        for t in texts:
+            if "python" in t.lower() or "backend" in t.lower():
+                vectors.append([1.0, 0.0])
+            else:
+                vectors.append([0.0, 1.0])
+        return np.array(vectors)
+
+    chunker = SemanticChunker(
+        embed_fn=mock_embed,
+        breakpoint_percentile=50.0,
+        min_distance=0.1,
+        min_chars=10,
+        max_chars=120,
+    )
+
+    text = """
+    • Senior Python backend developer with FastAPI experience.
+    • Architected microservices and PostgreSQL databases.
+    • Finance and accounting ledger reconciliation specialist.
+    • Monthly financial audit reports and tax calculations.
+    """
+    chunks = chunker.chunk_text(text, header="EXPERIENCE")
+    assert len(chunks) >= 2
+    assert all("[EXPERIENCE]" in c for c in chunks)

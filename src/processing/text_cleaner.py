@@ -1,28 +1,42 @@
+
 import html
 import re
 
 
 def clean_job_description(text: str) -> str:
-    """
-    Convert encoded HTML job description into clean plain text.
-    """
+    """Convert encoded HTML job description into clean plain text."""
+    if not text:
+        return ""
+
+    # Decode HTML entities.
     text = html.unescape(text)
 
-    # Replace common block-level HTML tags with line breaks
+    # Preserve HTML block boundaries before removing tags.
     text = re.sub(
-        r"<(br|p|div|li|h[1-6]|tr|hr)[^>]*>",
+        r"<\s*(?:br|hr)\b[^>]*>",
         "\n",
         text,
         flags=re.IGNORECASE,
     )
 
-    # Remove remaining HTML tags
+    text = re.sub(
+        r"<\s*/?\s*(?:p|div|li|h[1-6]|tr|ul|ol|section|article)\b[^>]*>",
+        "\n",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    # Remove remaining HTML tags.
     text = re.sub(r"<[^>]+>", "", text)
 
-    # Normalize whitespace
+    # Remove common Markdown emphasis markers.
+    text = re.sub(r"\*\*|__", "", text)
+    text = re.sub(r"(?<!\w)[*_]|[*_](?!\w)", "", text)
+
+    # Normalize horizontal whitespace while preserving newlines.
     text = re.sub(r"[ \t]+", " ", text)
 
-    # Normalize excessive newlines
-    text = re.sub(r"\n\s*\n+", "\n\n", text)
+    # Normalize excessive blank lines.
+    text = re.sub(r"\n[ \t]*\n(?:[ \t]*\n)+", "\n\n", text)
 
     return text.strip()

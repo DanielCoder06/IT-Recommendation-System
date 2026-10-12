@@ -97,18 +97,10 @@ def _find_column_boundary(
             for block in body_candidates
         )
 
-        print(
-            f"[DEBUG] Gap=({gap_start:.2f}, {gap_end:.2f}), "
-            f"width={gap_width:.2f}, boundary={boundary:.2f}, "
-            f"left={left_count}, right={right_count}"
-        )
-
         if left_count >= 4 and right_count >= 4:
             valid_gaps.append(
                 (gap_width, boundary, left_count, right_count)
             )
-
-    print(f"[DEBUG] Valid gaps: {valid_gaps}")
 
     if not valid_gaps:
         return None
@@ -121,7 +113,6 @@ def _find_column_boundary(
         ),
     )
 
-    print(f"[DEBUG] Selected column boundary: {boundary:.2f}")
     return boundary
 
 def _order_blocks(
@@ -175,13 +166,6 @@ def _order_blocks(
     left_blocks.sort(key=lambda b: (b["y0"], b["x0"]))
     right_blocks.sort(key=lambda b: (b["y0"], b["x0"]))
     spanning_blocks.sort(key=lambda b: (b["y0"], b["x0"]))
-
-    print(
-        f"[DEBUG] Header={len(header_blocks)}, "
-        f"left={len(left_blocks)}, "
-        f"right={len(right_blocks)}, "
-        f"spanning={len(spanning_blocks)}"
-    )
 
     # Header trước, sau đó đọc cột trái và cột phải.
     return (

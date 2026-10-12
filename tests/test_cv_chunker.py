@@ -127,7 +127,7 @@ def test_section_filtering():
     print("PASS: test_section_filtering")
 
 
-def test_real_cv(pdf_path: str):
+def run_real_cv(pdf_path: str):
     """Kiểm tra lọc section trên một CV PDF thực tế."""
 
     lines = read_pdf_lines(pdf_path)
@@ -181,7 +181,7 @@ def main():
     test_section_filtering()
 
     for pdf_path in CV_PATHS:
-        test_real_cv(pdf_path)
+        run_real_cv(pdf_path)
 
     print("\nPASS: Tất cả kiểm thử CV chunking đã hoàn thành.")
 
