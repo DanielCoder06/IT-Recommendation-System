@@ -2,6 +2,7 @@ import requests
 
 from src.models.raw_job import RawJob
 from src.sources.base_source import BaseSource
+from src.processing.job_lifecycle import parse_datetime
 from src.processing.text_cleaner import clean_job_description
 
 
@@ -37,7 +38,9 @@ class JobicyScraper(BaseSource):
                     job.get("jobDescription", "")
                 ),
                 job_url=job.get("url", ""),
-                posted_date=None,
+                posted_date=parse_datetime(
+                    job.get("jobPubDate") or job.get("pubDate")
+                ),
                 employment_type=", ".join(
                     job.get("jobType", [])
                 ),

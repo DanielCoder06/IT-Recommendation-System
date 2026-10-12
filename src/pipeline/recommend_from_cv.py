@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 # --- Import CV Pipeline ---
@@ -13,14 +12,19 @@ from src.processing.jd_chunker import chunk_jd_text
 from src.matching.chunk_similarity_matcher import match_chunks, encode_chunks
 from src.matching.chunk_job_scorer import calculate_job_score
 from src.processing.job_filter import is_senior_job
-from database.job_repository import get_all_jobs
+from database.job_repository import get_matchable_jobs
+from src.processing.job_lifecycle import (
+    MATCH_RECENCY_DAYS,
+    job_age_days,
+    parse_datetime,
+    recency_multiplier,
+    utc_now,
+)
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 CV_PATH = BASE_DIR / "data" / "HTN-CV.pdf"
 if not CV_PATH.exists():
     CV_PATH = BASE_DIR / "data" / "external" / "resumes" / "ResumesPDF" / "sample_cv.pdf"
-JOBS_PATH = BASE_DIR / "data" / "filtered_it_jobs.json"
-
 TOP_K = 10
 JD_WORDS_PER_CHUNK = 120
 EXCLUDE_SENIOR = True  # Đặt True để loại bỏ các job Senior / Lead / Principal / Architect / Manager
@@ -38,20 +42,9 @@ CV_CORE_SECTIONS = {
 
 def load_jobs() -> list[dict]:
     """
-    Ưu tiên đọc trực tiếp từ SQLite Database (Single Source of Truth),
-    fallback sang JSON nếu DB chưa có dữ liệu.
+    Chỉ lấy job đang active và còn trong cửa sổ recency.
     """
-    try:
-        db_jobs = get_all_jobs()
-        if db_jobs:
-            return db_jobs
-    except Exception as e:
-        print(f"[Warning] Không thể đọc từ DB ({e}), chuyển sang đọc file JSON.")
-
-    if JOBS_PATH.exists():
-        with JOBS_PATH.open("r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
+    return get_matchable_jobs(recency_days=MATCH_RECENCY_DAYS)
 
 def main():
     print("=" * 70)
@@ -105,15 +98,22 @@ def main():
     # --------------------------------------------------
     # 2. XỬ LÝ JD & MATCHING
     # --------------------------------------------------
+    now = utc_now()
     jobs = load_jobs()
     if EXCLUDE_SENIOR:
         jobs = [
             job for job in jobs
             if not is_senior_job(job.get("title", ""), job.get("experience", ""))
         ]
-        print(f"Jobs loaded (Exclude Senior): {len(jobs)}")
+        print(
+            f"Jobs loaded (active, last {MATCH_RECENCY_DAYS} days, "
+            f"exclude senior): {len(jobs)}"
+        )
     else:
-        print(f"Jobs loaded: {len(jobs)}")
+        print(
+            f"Jobs loaded (active, last {MATCH_RECENCY_DAYS} days): "
+            f"{len(jobs)}"
+        )
 
     results = []
 
@@ -146,6 +146,12 @@ def main():
 
         # PP 2: Tính điểm dựa trên Top-K requirements khớp nhất của JD
         score = calculate_job_score(chunk_matches, top_k=SCORE_TOP_K_REQS)
+        age_days = job_age_days(
+            parse_datetime(job.get("posted_date")),
+            parse_datetime(job.get("created_at")),
+            now,
+        )
+        ranked_score = score["job_score"] * recency_multiplier(age_days)
 
         results.append({
             "job_id": index,
@@ -153,7 +159,7 @@ def main():
             "company": job["company"],
             "location": job.get("location"),
             "url": job.get("url"),
-            "job_score": score["job_score"],
+            "job_score": ranked_score,
         })
 
     # --------------------------------------------------

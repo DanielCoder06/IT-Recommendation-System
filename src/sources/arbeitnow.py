@@ -2,6 +2,7 @@ import requests
 
 from src.models.raw_job import RawJob
 from src.sources.base_source import BaseSource
+from src.processing.job_lifecycle import parse_datetime
 from src.processing.text_cleaner import clean_job_description
 
 
@@ -36,6 +37,7 @@ class ArbeitnowScraper(BaseSource):
                     job.get("description", "")
                 ),
                 job_url=job["url"],
+                posted_date=parse_datetime(job.get("created_at")),
                 experience=None,
                 raw_data=job,
             )

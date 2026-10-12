@@ -4,7 +4,11 @@ from src.sources.jobicy import JobicyScraper
 from src.processing.job_adapter import raw_jobs_to_job_records
 from src.processing.job_filter import filter_it_jobs
 
-from database.job_repository import upsert_job
+from database.job_repository import (
+    count_jobs_by_status,
+    refresh_job_lifecycle,
+    upsert_job,
+)
 
 def main():    
     # Crawl data from sources
@@ -42,7 +46,21 @@ def main():
         upsert_job(job)
         saved_jobs += 1
 
+    changed = refresh_job_lifecycle(it_job_urls)
+    totals = count_jobs_by_status()
+
     print(f"Jobs saved: {saved_jobs}")
+    print(
+        "Lifecycle changes: "
+        f"closed={changed.get('closed', 0)}, "
+        f"expired={changed.get('expired', 0)}"
+    )
+    print(
+        "Jobs by status: "
+        f"active={totals.get('active', 0)}, "
+        f"closed={totals.get('closed', 0)}, "
+        f"expired={totals.get('expired', 0)}"
+    )
     
 if __name__ == "__main__":
     main()
