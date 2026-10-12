@@ -146,3 +146,20 @@ def get_job_by_url(
         if row["remote"] is not None
         else None,
     )
+
+
+def get_all_jobs() -> list[dict]:
+    """
+    Lấy toàn bộ danh sách jobs dưới dạng dict để phục vụ pipeline matching
+    """
+    connection = get_connection()
+    rows = connection.execute(
+        """
+        SELECT id, title, company, location, description, job_url as url, experience, remote, posted_date
+        FROM jobs
+        ORDER BY id DESC
+        """
+    ).fetchall()
+    connection.close()
+
+    return [dict(row) for row in rows]
