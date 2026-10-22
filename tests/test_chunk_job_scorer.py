@@ -21,17 +21,16 @@ def test_calculate_job_score():
         },
     ]
 
-    result = calculate_job_score(matches)
+    result = calculate_job_score(matches, top_k=2)
 
     assert "job_score" in result
     assert "quality" in result
-    assert "coverage" in result
     assert "chunk_scores" in result
 
     assert len(result["chunk_scores"]) == 3
-    assert result["quality"] == (0.8 + 0.6 + 0.4) / 3
-    assert 0.0 <= result["coverage"] <= 1.0
-    assert result["job_score"] > 0
+    assert result["quality"] == pytest.approx((0.8 + 0.6 + 0.4) / 3)
+    # top_k=2 lấy trung bình của 0.8 và 0.6
+    assert result["job_score"] == pytest.approx((0.8 + 0.6) / 2)
 
 
 def test_empty_matches():
@@ -39,7 +38,6 @@ def test_empty_matches():
 
     assert result["job_score"] == 0.0
     assert result["quality"] == 0.0
-    assert result["coverage"] == 0.0
     assert result["chunk_scores"] == []
 
 
@@ -62,8 +60,7 @@ def test_all_equal_similarities():
         },
     ]
 
-    result = calculate_job_score(matches)
+    result = calculate_job_score(matches, top_k=3)
 
-    assert result["quality"] == 0.5
-    assert result["coverage"] == 1.0
-    assert result["job_score"] == pytest.approx(0.65)
+    assert result["quality"] == pytest.approx(0.5)
+    assert result["job_score"] == pytest.approx(0.5)
