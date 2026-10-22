@@ -22,15 +22,13 @@ from src.processing.job_lifecycle import (
 )
 
 BASE_DIR = Path(__file__).resolve().parents[2]
-CV_PATH = BASE_DIR / "data" / "HTN-CV.pdf"
-if not CV_PATH.exists():
-    CV_PATH = BASE_DIR / "data" / "external" / "resumes" / "ResumesPDF" / "sample_cv.pdf"
+CV_PATH = BASE_DIR / "data" / "No-Name.pdf"
 TOP_K = 10
 JD_WORDS_PER_CHUNK = 120
 EXCLUDE_SENIOR = True  # Đặt True để loại bỏ các job Senior / Lead / Principal / Architect / Manager
 SCORE_TOP_K_REQS = 3  # Đánh giá dựa trên Top-K requirements/responsibilities khớp nhất của JD
 
-# Phương pháp 3: Chỉ giữ lại các section kỹ thuật cốt lõi của CV
+# Section kỹ thuật cốt lõi của CV
 CV_CORE_SECTIONS = {
     "SKILLS",
     "PROJECTS",
@@ -42,7 +40,7 @@ CV_CORE_SECTIONS = {
 
 def load_jobs() -> list[dict]:
     """
-    Chỉ lấy job đang active và còn trong cửa sổ recency.
+    Chỉ lấy job đang active và còn trong cửa sổ re cency.
     """
     return get_matchable_jobs(recency_days=MATCH_RECENCY_DAYS)
 
@@ -52,22 +50,21 @@ def main():
     print("=" * 70)
 
     # --------------------------------------------------
-    # 1. XỬ LÝ CV (Structure-Aware + Semantic Boundary Chunking)
+    # 1. XỬ LÝ CV (Structure-Based + Semantic Boundary Chunking)
     # --------------------------------------------------
-    # Đọc PDF và bảo toàn cấu trúc layout, font, cột
     cv_lines = read_pdf_lines(CV_PATH)
     cv_sections = split_sections(cv_lines)
     
     # Trích xuất các Section quan trọng
     cv_structured_chunks = structure_chunk(cv_sections)
 
-    # PP 3: Lọc lấy các Section chuyên môn cốt lõi (loại bỏ Languages giao tiếp, Education tổng quát)
+    # Lọc lấy các Section chuyên môn cốt lõi
     cv_structured_chunks = [
         chunk for chunk in cv_structured_chunks
         if chunk.section in CV_CORE_SECTIONS
     ]
 
-    # Khởi tạo SemanticChunker tinh chỉnh theo ngữ nghĩa (từ cv_chunking_colab.ipynb)
+    # Khởi tạo SemanticChunker tinh chỉnh theo ngữ nghĩa
     semantic_chunker = SemanticChunker(
         breakpoint_percentile=70.0,
         min_distance=0.15,
@@ -136,7 +133,7 @@ def main():
         if not important_jd_chunks:
             continue
 
-        # PP 1: Đổi chiều matching (Mỗi JD Requirement tìm CV Chunk phù hợp nhất)
+        # Đổi chiều matching (Mỗi JD Requirement tìm CV Chunk phù hợp nhất)
         # Sử dụng cv_embeddings đã encode sẵn
         chunk_matches = match_chunks(
             query_chunks=important_jd_chunks,
@@ -144,7 +141,7 @@ def main():
             candidate_embeddings=cv_embeddings,
         )
 
-        # PP 2: Tính điểm dựa trên Top-K requirements khớp nhất của JD
+        # Tính điểm dựa trên Top-K requirements khớp nhất của JD
         score = calculate_job_score(chunk_matches, top_k=SCORE_TOP_K_REQS)
         age_days = job_age_days(
             parse_datetime(job.get("posted_date")),

@@ -49,7 +49,7 @@ def main():
     changed = refresh_job_lifecycle(it_job_urls)
     totals = count_jobs_by_status()
 
-    print(f"Jobs saved: {saved_jobs}")
+    print(f"Jobs saved:  {saved_jobs}")
     print(
         "Lifecycle changes: "
         f"closed={changed.get('closed', 0)}, "
