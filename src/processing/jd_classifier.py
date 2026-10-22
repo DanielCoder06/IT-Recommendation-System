@@ -10,8 +10,7 @@ class JDCategory(Enum):
     ANTI_REQ = "ANTI_REQ"
     GENERAL = "GENERAL"
 
-# 1. BỘ LỌC TỪ KHÓA NHANH (Bổ sung số nhiều và các biến thể)
-# Cập nhật thêm vào EXACT_KEYWORDS trong jd_classifier.py
+# BỘ LỌC TỪ KHÓA NHANH 
 EXACT_KEYWORDS = {
     JDCategory.REQUIREMENT: [
         "about you", "your profile", "requirement", "requirements", 
@@ -42,7 +41,7 @@ EXACT_KEYWORDS = {
     ]
 }
 
-# 2. MỎ NEO NGỮ NGHĨA CHO AI
+# MỎ NEO NGỮ NGHĨA CHO AI
 ANCHOR_TEXTS = {
     JDCategory.REQUIREMENT: "Qualifications, core skills, experience required, candidate requirements, ideal candidate, technical skills",
     JDCategory.RESPONSIBILITY: "Day to day responsibilities, daily tasks, accountability, in this role you will",
@@ -62,7 +61,7 @@ def _get_anchor_embeddings():
             for category, text in ANCHOR_TEXTS.items()
         }
     return _anchor_embeddings
-
+# Hàm phân loại tiêu đề JD dựa trên từ khóa và embedding
 def classify_heading(heading_text: str, threshold: float = 0.45) -> JDCategory:
     if not heading_text or not heading_text.strip():
         return JDCategory.GENERAL

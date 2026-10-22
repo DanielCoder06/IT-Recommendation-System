@@ -58,8 +58,7 @@ def split_text_into_units(text: str) -> list[str]:
 
 class SemanticChunker:
     """
-    Semantic Chunker theo kiến trúc từ cv_chunking_colab.ipynb:
-    - Tạo context window trượt để embedding mượt mà.
+    - Tạo context window trượt để embedding
     - Tính khoảng cách cosine giữa các đơn vị liên tiếp (1 - cosine similarity).
     - Cắt tại các điểm đổi ngữ nghĩa (vượt ngưỡng phân vị breakpoint_percentile).
     - Đảm bảo giới hạn độ dài hợp lý (min_chars, max_chars).

@@ -11,7 +11,7 @@ class TextUnit:
     is_heading: bool = False
     category: str = JDCategory.GENERAL.value
 
-
+# Các heading tiếng Anh đã biết sẽ được xử lý đặc biệt
 _INLINE_HEADINGS = (
     "How we work at Aircall",
     "Your mission @ Aircall",
@@ -20,7 +20,7 @@ _INLINE_HEADINGS = (
     "Why join us",
     "DE&I Statement",
 )
-
+# Regex để tách các heading tiếng Anh đã biết khi nó đứng cùng dòng với nội dung.
 _INLINE_HEADING_PATTERN = re.compile(
     r"(?i)(?<!\S)("
     + "|".join(re.escape(h) for h in _INLINE_HEADINGS)
@@ -112,7 +112,7 @@ def split_jd_units(text: str) -> list[TextUnit]:
     
     text = _split_inline_headings(text)
     
-    # [CẬP NHẬT MỚI]: Tách các heading in hoa phổ biến bị dính liền vào câu
+    # Tách các heading in hoa phổ biến bị dính liền vào câu
     text = _split_known_uppercase_headings(text)
 
     # Tách heading viết hoa nếu nó bị dính sát vào cuối câu trước đó

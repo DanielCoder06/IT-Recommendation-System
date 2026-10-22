@@ -27,11 +27,12 @@ def _semantic_distances(
     """Tính cosine distance giữa hai đơn vị nội dung liên tiếp."""
     if len(units) < 2:
         return np.empty(0, dtype=float)
-
+    # Mảng tính khoản cách
     distances = np.full(
         len(units) - 1,
-        np.nan,
+        np.nan, # Dùng nan thay vì 0 thì là vector 0
         dtype=float,
+        
     )
 
     content_indices = [

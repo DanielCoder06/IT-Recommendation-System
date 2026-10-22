@@ -193,7 +193,7 @@ def get_all_jobs() -> list[dict]:
 
     return [dict(row) for row in rows]
 
-
+# Lấy job
 def get_matchable_jobs(
     recency_days: int = MATCH_RECENCY_DAYS,
     now: datetime | None = None,

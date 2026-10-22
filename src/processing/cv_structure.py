@@ -6,7 +6,6 @@ import pymupdf
 
 from src.processing.cv_text_extractor import (
     _extract_blocks,
-    _find_column_boundary,
     _order_blocks,
 )
 
@@ -135,10 +134,8 @@ def read_pdf_lines(pdf_path: str | Path) -> list[Line]:
     with pymupdf.open(pdf_path) as document:
         for page_number, page in enumerate(document, start=1):
             blocks = _extract_blocks(page)
-            boundary = _find_column_boundary(blocks, page.rect.width)
 
-            # Khi phát hiện hai cột, dùng thứ tự cột.
-            # Nếu không, dùng thứ tự gần theo hàng.
+            # Khi phát hiện hai cột, dùng thứ tự cột, nếu không, dùng thứ tự gần theo hàng.
             ordered_blocks = _order_blocks(blocks, page.rect.width)
 
             for block in ordered_blocks:
@@ -243,6 +240,7 @@ def split_sections(lines: list[Line]) -> list[Section]:
     if not lines:
         return []
 
+    # Median font size
     body_size = sorted(line.size for line in lines)[len(lines) // 2]
 
     sections = []
