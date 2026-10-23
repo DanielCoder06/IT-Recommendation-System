@@ -165,30 +165,54 @@ def get_job_by_url(
     )
 
 
-def get_all_jobs() -> list[dict]:
+def get_all_jobs(status_filter: str | None = None) -> list[dict]:
     """
-    Lấy toàn bộ danh sách jobs dưới dạng dict để phục vụ pipeline matching
+    Lấy toàn bộ danh sách jobs dưới dạng dict để phục vụ pipeline matching và hiển thị web.
+    - status_filter: Lọc theo trạng thái ('active', 'closed'...). Nếu None thì lấy tất cả.
     """
     connection = get_connection()
-    rows = connection.execute(
-        """
-        SELECT
-            id,
-            title,
-            company,
-            location,
-            description,
-            job_url as url,
-            experience,
-            remote,
-            posted_date,
-            created_at,
-            last_seen_at,
-            status
-        FROM jobs
-        ORDER BY id DESC
-        """
-    ).fetchall()
+    if status_filter:
+        rows = connection.execute(
+            """
+            SELECT
+                id,
+                title,
+                company,
+                location,
+                description,
+                job_url as url,
+                experience,
+                remote,
+                posted_date,
+                created_at,
+                last_seen_at,
+                status
+            FROM jobs
+            WHERE status = ?
+            ORDER BY id DESC
+            """,
+            (status_filter,),
+        ).fetchall()
+    else:
+        rows = connection.execute(
+            """
+            SELECT
+                id,
+                title,
+                company,
+                location,
+                description,
+                job_url as url,
+                experience,
+                remote,
+                posted_date,
+                created_at,
+                last_seen_at,
+                status
+            FROM jobs
+            ORDER BY id DESC
+            """
+        ).fetchall()
     connection.close()
 
     return [dict(row) for row in rows]

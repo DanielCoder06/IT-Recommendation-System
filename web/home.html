@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSIT</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <header>
+        <h1>HỆ THỐNG TÌM KIẾM CÔNG VIỆC IT</h1>
+        <nav>
+            <button type="button" id="tabRecommend" class="active">Tìm công việc phù hợp</button>
+            <button type="button" id="tabAllJobs">Danh sách công việc IT</button>
+        </nav>
+    </header>
+
+    <main>
+        <!-- ================= PAGE 1: UPLOAD CV & GỢI Ý ================= -->
+        <div id="pageRecommend" class="page-content active">
+            <!-- Upload CV -->
+            <section id="uploadCV">
+                <h2>Upload CV</h2>
+                <form id="cvForm">
+                    <div id="dropZone" class="drop-zone">
+                        <p id="dropPrompt">Kéo và thả file CV (.pdf) vào đây, hoặc click để chọn</p>
+                        <input type="file" id="cvFile" accept=".pdf">
+                        <span id="fileNameDisplay" class="file-name"></span>
+                    </div>
+                    <button type="submit" id="btnSubmitCV">Tìm kiếm</button>
+                </form>
+            </section>
+
+            <!-- Danh sách công việc nổi bật / gợi ý -->
+            <section id="jobsDisplaySection">
+                <div class="jobs-header-row">
+                    <h2 id="jobsSectionTitle">Việc làm nổi bật</h2>
+                    <span id="recommendCountText" class="jobs-total"></span>
+                </div>
+
+                <!-- Grid hiển thị công việc nổi bật / gợi ý -->
+                <div id="jobsRecommendGrid" class="jobs-grid">
+                    <!-- Dữ liệu render động từ API / backend -->
+                </div>
+
+                <!-- Nút xem thêm để nhảy qua trang Danh sách công việc IT -->
+                <div style="text-align: center; margin-top: 15px;">
+                    <button type="button" id="btnViewMoreJobs" class="btn-view-more">
+                        Xem thêm
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= PAGE 2: TẤT CẢ CÔNG VIỆC IT ================= -->
+        <div id="pageAllJobs" class="page-content">
+            <section id="allJobsSection">
+                <div class="jobs-header-row">
+                    <h2>Việc làm nổi bật</h2>
+                    <span id="jobsTotalText" class="jobs-total">Đang tải...</span>
+                </div>
+
+                <!-- Grid hiển thị 9 job -->
+                <div id="jobsGrid" class="jobs-grid">
+                    <!-- Các card job sẽ được JS render tự động vào đây -->
+                </div>
+
+                <!-- Thanh chuyển Section / Trang (Pagination) -->
+                <div class="pagination-bar">
+                    <button type="button" id="btnPrevPage" class="page-btn">◀ Trang trước</button>
+                    <span id="pageInfoText" class="page-info">Trang 1</span>
+                    <button type="button" id="btnNextPage" class="page-btn">Trang sau ▶</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer></footer>
+    <script src="/static/main.js"></script>
+</body>
+
+</html>
