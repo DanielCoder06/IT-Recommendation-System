@@ -10,7 +10,7 @@ from database.job_repository import (
     upsert_job,
 )
 
-def main():    
+def run_job_update() -> dict:
     # Crawl data from sources
     raw_jobs = (
         ArbeitnowScraper().fetch()
@@ -22,9 +22,6 @@ def main():
     
     # Filter IT jobs
     it_jobs = filter_it_jobs(job_records)
-
-    print(f"Raw jobs: {len(raw_jobs)}")
-    print(f"IT jobs: {len(it_jobs)}")
     
     # Get urls of IT jobs (!set() ->delete duplicates url)
     it_job_urls = {
@@ -41,7 +38,6 @@ def main():
     
     # Save / Update db
     saved_jobs = 0
-    
     for job in it_raw_jobs:
         upsert_job(job)
         saved_jobs += 1
@@ -49,18 +45,20 @@ def main():
     changed = refresh_job_lifecycle(it_job_urls)
     totals = count_jobs_by_status()
 
-    print(f"Jobs saved:  {saved_jobs}")
-    print(
-        "Lifecycle changes: "
-        f"closed={changed.get('closed', 0)}, "
-        f"expired={changed.get('expired', 0)}"
-    )
-    print(
-        "Jobs by status: "
-        f"active={totals.get('active', 0)}, "
-        f"closed={totals.get('closed', 0)}, "
-        f"expired={totals.get('expired', 0)}"
-    )
+    return {
+        "raw_jobs_count": len(raw_jobs),
+        "it_jobs_count": len(it_jobs),
+        "saved_jobs": saved_jobs,
+        "closed_jobs": changed.get("closed", 0),
+        "expired_jobs": changed.get("expired", 0),
+        "active_jobs": totals.get("active", 0),
+    }
+
+def main():
+    res = run_job_update()
+    print(f"Jobs saved: {res['saved_jobs']}")
+    print(f"Active jobs: {res['active_jobs']}")
+    print(f"Closed: {res['closed_jobs']}, Expired: {res['expired_jobs']}")
     
 if __name__ == "__main__":
     main()

@@ -24,13 +24,13 @@ document.addEventListener("DOMContentLoaded", () => {
     dropZone.addEventListener("drop", (e) => {
         const files = e.dataTransfer.files;
         if (files && files.length > 0) {
-            // Gán file vào input để submit form có thể đọc được
+            // Gán file vào input để submit form có thể đọc 
             cvFileInput.files = files;
             handleFile(files[0]);
         }
     });
 
-    // Chọn file bình thường qua cửa sổ chọn file
+    // Chọn file
     cvFileInput.addEventListener("change", (e) => {
         if (e.target.files && e.target.files.length > 0) {
             handleFile(e.target.files[0]);
@@ -46,56 +46,18 @@ document.addEventListener("DOMContentLoaded", () => {
             dropPrompt.style.display = "block";
             return;
         }
-        // Ẩn dòng chữ hướng dẫn ở trên và hiện tên file đã chọn
+        // Ẩn dòng chữ hướng dẫn và hiện tên file đã chọn
         dropPrompt.style.display = "none";
         fileNameDisplay.textContent = file.name;
         fileNameDisplay.style.display = "inline-block";
     }
 
+    const jobsDisplaySection = document.getElementById("jobsDisplaySection");
     const jobsSectionTitle = document.getElementById("jobsSectionTitle");
     const recommendCountText = document.getElementById("recommendCountText");
     const jobsRecommendGrid = document.getElementById("jobsRecommendGrid");
 
-    // Tự động tải danh sách công việc nổi bật từ Database thật khi mở trang
-    loadFeaturedJobs();
-
-    async function loadFeaturedJobs() {
-        jobsRecommendGrid.style.display = "grid";
-        jobsRecommendGrid.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; color: #666; padding: 30px;">
-                Đang tải danh sách công việc nổi bật từ hệ thống...
-            </div>
-        `;
-        try {
-            const response = await fetch("http://127.0.0.1:8000/api/jobs?page=1&limit=6");
-            const resData = await response.json();
-            const jobs = resData.data || [];
-            recommendCountText.textContent = "";
-
-            jobsRecommendGrid.innerHTML = jobs.map((job) => `
-                <div class="job-card-item">
-                    <div>
-                        <div class="job-item-title">${job.title}</div>
-                        <div class="job-item-meta"><strong>Công ty:</strong> ${job.company}</div>
-                        <div class="job-item-meta"><strong>Địa điểm:</strong> ${job.location}</div>
-                    </div>
-                    <div class="job-item-footer">
-                        <span style="font-size: 12px; color: #ff9800; font-weight: bold;">Nổi bật</span>
-                        <a href="${job.url}" target="_blank">Xem chi tiết</a>
-                    </div>
-                </div>
-            `).join("");
-        } catch (error) {
-            console.error("Lỗi tải việc làm nổi bật:", error);
-            jobsRecommendGrid.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 20px;">
-                    Không thể tải dữ liệu việc làm nổi bật. Vui lòng kiểm tra server backend.
-                </div>
-            `;
-        }
-    }
-
-    // Xử lý gửi form (Tìm kiếm / Gợi ý 10 việc làm phù hợp nhất theo CV hiển thị dạng bảng)
+    // Xử lý gửi form (Tìm kiếm / Gợi ý 10 việc làm phù hợp)
     cvForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         if (!cvFileInput.files || cvFileInput.files.length === 0) {
@@ -112,11 +74,16 @@ document.addEventListener("DOMContentLoaded", () => {
             submitBtn.textContent = "Đang tìm kiếm...";
         }
 
+        // Hiện vùng hiển thị kết quả và trạng thái đang phân tích
+        if (jobsDisplaySection) {
+            jobsDisplaySection.style.display = "block";
+        }
         jobsSectionTitle.textContent = "Việc làm gợi ý cho bạn";
         recommendCountText.textContent = `(Đang phân tích CV: ${file.name}...)`;
+        jobsRecommendGrid.style.display = "block";
         jobsRecommendGrid.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; color: #666; padding: 30px;">
-                Đang phân tích CV và tìm kiếm công việc phù hợp nhất...
+            <div style="text-align: center; color: #666; padding: 40px; background: #fafafa; border: 1px dashed #ccc; border-radius: 6px;">
+                Đang phân tích cấu trúc, kỹ năng CV và tìm kiếm công việc phù hợp nhất...
             </div>
         `;
 
@@ -126,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
             formData.append("exclude_senior", "true");
             formData.append("top_k", "10");
 
-            const response = await fetch("http://127.0.0.1:8000/api/recommend-cv", {
+            const response = await fetch("/api/recommend-cv", {
                 method: "POST",
                 body: formData,
             });
@@ -225,7 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
         loadJobsFromBackend(currentPage);
     });
 
-    // Nút "Xem tất cả công việc IT" chuyển sang tab Danh sách công việc IT
+    // Nút "Xem thêm" chuyển sang tab Danh sách công việc IT
     const btnViewMoreJobs = document.getElementById("btnViewMoreJobs");
     if (btnViewMoreJobs) {
         btnViewMoreJobs.addEventListener("click", () => {
@@ -249,7 +216,63 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Hàm gọi FastAPI Backend với Pagination
+    // Nút cập nhật việc làm mới từ các nguồn (Crawl & Update DB)
+    const btnUpdateJobs = document.getElementById("btnUpdateJobs");
+    const updateStatusBanner = document.getElementById("updateStatusBanner");
+    let updateBannerTimeout = null;
+
+    function showUpdateBanner(message, type = "info", autoDismiss = false) {
+        if (!updateStatusBanner) return;
+        if (updateBannerTimeout) {
+            clearTimeout(updateBannerTimeout);
+            updateBannerTimeout = null;
+        }
+        updateStatusBanner.className = `update-status-banner ${type}`;
+        updateStatusBanner.innerHTML = message;
+        updateStatusBanner.style.display = "block";
+
+        if (autoDismiss) {
+            updateBannerTimeout = setTimeout(() => {
+                updateStatusBanner.style.display = "none";
+            }, 5000);
+        }
+    }
+
+    if (btnUpdateJobs) {
+        btnUpdateJobs.addEventListener("click", async () => {
+            const originalText = btnUpdateJobs.innerHTML;
+            btnUpdateJobs.disabled = true;
+            btnUpdateJobs.innerHTML = "Đang cập nhật...";
+            showUpdateBanner("Hệ thống đang kết nối và cào dữ liệu việc làm IT mới nhất từ các nguồn (Jobicy, Arbeitnow)... Vui lòng đợi trong giây lát.", "info");
+
+            try {
+                const response = await fetch("/api/jobs/update", {
+                    method: "POST",
+                });
+                const resData = await response.json();
+
+                if (resData.success) {
+                    const d = resData.data;
+                    showUpdateBanner(
+                        `<strong>Cập nhật thành công!</strong> Tìm thấy <strong>${d.it_jobs_count}</strong> việc làm IT phù hợp, đã lưu/cập nhật <strong>${d.saved_jobs}</strong> việc làm vào hệ thống. (Tổng hiện có: ${d.active_jobs} việc làm).`,
+                        "success",
+                        true
+                    );
+                    loadJobsFromBackend(currentPage);
+                } else {
+                    showUpdateBanner(`<strong>Cập nhật thất bại:</strong> ${resData.error || "Server gặp lỗi khi cào dữ liệu"}`, "error");
+                }
+            } catch (err) {
+                console.error("Lỗi khi cập nhật việc làm:", err);
+                showUpdateBanner("<strong>Không thể kết nối tới server!</strong> Vui lòng khởi động lại server hoặc kiểm tra kết nối mạng.", "error");
+            } finally {
+                btnUpdateJobs.disabled = false;
+                btnUpdateJobs.innerHTML = originalText;
+            }
+        });
+    }
+
+    // Hàm gọi FastAPI Backend
     async function loadJobsFromBackend(page = 1) {
         jobsGrid.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; color: #666; padding: 40px;">

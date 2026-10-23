@@ -31,25 +31,21 @@
                     </div>
                     <button type="submit" id="btnSubmitCV">Tìm kiếm</button>
                 </form>
+                <div class="view-more-container">
+                    <button type="button" id="btnViewMoreJobs" class="btn-view-more">Xem thêm công việc hiện có</button>
+                </div>
             </section>
 
-            <!-- Danh sách công việc nổi bật / gợi ý -->
-            <section id="jobsDisplaySection">
+            <!-- Danh sách công việc gợi ý theo CV (Ẩn mặc định, chỉ hiện khi upload & tìm kiếm CV) -->
+            <section id="jobsDisplaySection" style="display: none;">
                 <div class="jobs-header-row">
-                    <h2 id="jobsSectionTitle">Việc làm nổi bật</h2>
+                    <h2 id="jobsSectionTitle">Việc làm gợi ý cho bạn</h2>
                     <span id="recommendCountText" class="jobs-total"></span>
                 </div>
 
-                <!-- Grid hiển thị công việc nổi bật / gợi ý -->
+                <!-- Bảng / Grid hiển thị kết quả gợi ý -->
                 <div id="jobsRecommendGrid" class="jobs-grid">
-                    <!-- Dữ liệu render động từ API / backend -->
-                </div>
-
-                <!-- Nút xem thêm để nhảy qua trang Danh sách công việc IT -->
-                <div style="text-align: center; margin-top: 15px;">
-                    <button type="button" id="btnViewMoreJobs" class="btn-view-more">
-                        Xem thêm
-                    </button>
+                    <!-- Dữ liệu render động từ API khi người dùng submit CV -->
                 </div>
             </section>
         </div>
@@ -58,9 +54,17 @@
         <div id="pageAllJobs" class="page-content">
             <section id="allJobsSection">
                 <div class="jobs-header-row">
-                    <h2>Việc làm nổi bật</h2>
-                    <span id="jobsTotalText" class="jobs-total">Đang tải...</span>
+                    <h2>Danh sách việc làm IT</h2>
+                    <div class="jobs-header-actions">
+                        <span id="jobsTotalText" class="jobs-total">Đang tải...</span>
+                        <button type="button" id="btnUpdateJobs" class="btn-update-jobs"
+                            title="Crawl dữ liệu mới từ các nguồn">
+                            Cập nhật việc làm mới
+                        </button>
+                    </div>
                 </div>
+
+                <div id="updateStatusBanner" class="update-status-banner" style="display: none;"></div>
 
                 <!-- Grid hiển thị 9 job -->
                 <div id="jobsGrid" class="jobs-grid">

@@ -15,7 +15,9 @@ Hệ thống gợi ý việc làm IT thông minh dựa trên phân tích cấu t
 - **Giao diện Web tương tác (Fullstack):**
   - Kéo thả file PDF CV trực quan.
   - Hiển thị bảng Top 10 việc làm phù hợp nhất kèm link tuyển dụng gốc.
+  - Nút chuyển hướng xem danh sách việc làm hiện có trực tiếp dưới phần tải CV.
   - Danh sách toàn bộ việc làm IT có hỗ trợ phân trang (Pagination).
+  - Tích hợp nút cào & cập nhật dữ liệu việc làm IT mới nhất từ các nguồn (Jobicy, Arbeitnow) với thông báo trạng thái trực quan.
   - Hỗ trợ truy cập đa thiết bị trong mạng LAN (`0.0.0.0`).
 
 ---
@@ -31,8 +33,9 @@ IT-Skill-Matching/
 │   ├── matching/        # Thuật toán so khớp vector và chấm điểm
 │   │   ├── chunk_job_scorer.py
 │   │   └── chunk_similarity_matcher.py
-│   ├── pipeline/        # Service tích hợp luồng gợi ý công việc
-│   │   └── matching_service.py
+│   ├── pipeline/        # Service tích hợp luồng gợi ý công việc & cập nhật data
+│   │   ├── matching_service.py
+│   │   └── update_jobs.py
 │   └── processing/      # Xử lý CV & JD (Chunking, filtering, lifecycle)
 │       ├── cv_chunker.py
 │       ├── cv_structure.py

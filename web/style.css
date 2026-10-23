@@ -239,9 +239,67 @@ footer {
     padding-bottom: 0;
 }
 
+.jobs-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-update-jobs {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease, opacity 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-update-jobs:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.btn-update-jobs:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #007bff;
+}
+
 .jobs-total {
     font-size: 13px;
     color: #666;
+}
+
+.update-status-banner {
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-bottom: 15px;
+    display: none;
+    line-height: 1.4;
+}
+
+.update-status-banner.info {
+    background-color: #eef6ff;
+    border: 1px solid #b8daff;
+    color: #0056b3;
+}
+
+.update-status-banner.success {
+    background-color: #e8f5e9;
+    border: 1px solid #c8e6c9;
+    color: #2e7d32;
+}
+
+.update-status-banner.error {
+    background-color: #ffebee;
+    border: 1px solid #ffcdd2;
+    color: #c62828;
 }
 
 .jobs-grid {
@@ -347,6 +405,12 @@ footer {
     font-size: 13px;
     color: #555;
     font-weight: bold;
+}
+
+.view-more-container {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
 }
 
 .btn-view-more {

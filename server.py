@@ -114,3 +114,25 @@ async def match_cv(
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
 
+
+@app.post("/api/jobs/update")
+async def update_jobs_from_sources():
+    """
+    Crawl dữ liệu việc làm IT mới nhất từ các nguồn (Jobicy, Arbeitnow) và cập nhật cơ sở dữ liệu
+    """
+    try:
+        from src.pipeline.update_jobs import run_job_update
+        result = run_job_update()
+        return {
+            "success": True,
+            "message": "Cập nhật dữ liệu việc làm thành công",
+            "data": result,
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {
+            "success": False,
+            "error": str(e),
+        }
+
