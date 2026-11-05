@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: it-recommend-system-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: it-recommend-system
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_it_recommend_system:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d it-recommend-system"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata_it_recommend_system:

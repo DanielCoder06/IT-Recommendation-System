@@ -1,0 +1,26 @@
+# Environment 
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual env
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs / temp
+*.log
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Thư mục chứa file test cá nhân
+data/CV-test/
