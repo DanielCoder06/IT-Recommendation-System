@@ -17,5 +17,23 @@ services:
       timeout: 5s
       retries: 10
 
+  app:
+    build: .
+    container_name: it-recommend-system-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Ghi đè host thành 'postgres' vì trong Docker network,
+      # container app gọi container db qua tên service
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=it-recommend-system
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   pgdata_it_recommend_system:
