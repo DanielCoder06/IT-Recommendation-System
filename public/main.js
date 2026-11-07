@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // CÁC HÀM DÙNG CHUNG (HELPER)
-
+  // ==================== CÁC HÀM DÙNG CHUNG (HELPER) ====================
   const isValidHttpUrl = (str) => {
     if (!str) return false;
     try {
@@ -14,7 +13,19 @@ document.addEventListener("DOMContentLoaded", () => {
     container.innerHTML = `<div class="state-placeholder ${type}">${msg}</div>`;
   };
 
-  // 1. LOGIC UPLOAD CV (TAB 1)
+  // Hàm ẩn/hiện chi tiết Matching (Đã chuyển ra ngoài để có thể gọi từ onclick)
+  window.toggleMatchDetails = (index) => {
+    const detailsDiv = document.getElementById(`details-${index}`);
+    if (detailsDiv) {
+      if (detailsDiv.style.display === "none") {
+        detailsDiv.style.display = "block";
+      } else {
+        detailsDiv.style.display = "none";
+      }
+    }
+  };
+
+  // ==================== 1. LOGIC UPLOAD CV (TAB 1) ====================
   const cvForm = document.getElementById("cvForm");
   const cvFileInput = document.getElementById("cvFile");
   const dropZone = document.getElementById("dropZone");
@@ -24,9 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const jobsRecommendGrid = document.getElementById("jobsRecommendGrid");
   const recommendCountText = document.getElementById("recommendCountText");
 
-  // --- BẮT ĐẦU PHẦN KÉO THẢ ĐÃ SỬA LỖI ---
+  // --- PHẦN KÉO THẢ FILE ---
   if (dropZone && cvFileInput) {
-    // Chặn trình duyệt tự mở file khi kéo thả ra ngoài vùng drop
     ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
       document.body.addEventListener(
         eventName,
@@ -35,36 +45,29 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     });
 
-    // Hiệu ứng khi kéo file vào
     dropZone.addEventListener("dragover", (e) => {
       e.preventDefault();
       dropZone.classList.add("dragover");
     });
 
-    // Hiệu ứng khi kéo file ra
     dropZone.addEventListener("dragleave", (e) => {
       e.preventDefault();
       dropZone.classList.remove("dragover");
     });
 
-    // Xử lý khi thả file
     dropZone.addEventListener("drop", (e) => {
       e.preventDefault();
       dropZone.classList.remove("dragover");
 
       const files = e.dataTransfer.files;
       if (files && files.length > 0) {
-        // FIX LỖI: Dùng DataTransfer để gán file an toàn thay vì gán trực tiếp
         const dataTransfer = new DataTransfer();
         dataTransfer.items.add(files[0]);
         cvFileInput.files = dataTransfer.files;
-
-        // Hiển thị tên file
         handleFileSelection(files[0]);
       }
     });
   }
-  // --- KẾT THÚC PHẦN KÉO THẢ ---
 
   cvFileInput.addEventListener("change", (e) => {
     if (e.target.files.length > 0) handleFileSelection(e.target.files[0]);
@@ -83,6 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fileNameDisplay.style.display = "inline-block";
   }
 
+  // --- SUBMIT FORM (GỌI API) ---
   cvForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!cvFileInput.files.length) return alert("Vui lòng chọn file CV!");
@@ -123,25 +127,63 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
 
-      // Render bảng bằng innerHTML (ngắn gọn hơn createElement rất nhiều)
-      let html = `<table class="recommend-table"><thead><tr>
-                <th class="td-rank">Hạng</th><th>Tên vị trí</th><th>Công ty</th><th>Địa điểm</th><th class="td-link">Chi tiết</th>
-            </tr></thead><tbody>`;
+      // --- RENDER KẾT QUẢ ---
+      jobsRecommendGrid.innerHTML = resData.data
+        .map((job, index) => {
+          const link = isValidHttpUrl(job.url)
+            ? `<a href="${job.url}" target="_blank" rel="noopener">🔗 Ứng tuyển</a>`
+            : "";
 
-      resData.data.forEach((job) => {
-        const link = isValidHttpUrl(job.url)
-          ? `<a href="${job.url}" target="_blank" rel="noopener">Xem</a>`
-          : "—";
-        html += `<tr>
-                    <td class="td-rank">#${job.rank}</td>
-                    <td>${job.title || ""}</td>
-                    <td>${job.company || ""}</td>
-                    <td>${job.location || ""}</td>
-                    <td class="td-link">${link}</td>
-                </tr>`;
-      });
-      html += `</tbody></table>`;
-      jobsRecommendGrid.innerHTML = html;
+          // Xây dựng phần chi tiết (ẩn mặc định)
+          let detailsHtml = "";
+          let buttonHtml = "";
+
+          if (job._details && job._details.length > 0) {
+            const topMatches = job._details.slice(0, 3); // Lấy 3 cặp khớp nhất
+            const matchesContent = topMatches
+              .map(
+                (match) => `
+              <div class="match-item">
+                  <span class="match-score">Độ tương đồng: ${(match.similarity * 100).toFixed(1)}%</span>
+                  <p><strong>[Yêu cầu công việc]</strong> ${match.jd_text}</p>
+                  <p><strong>[Bạn đã đáp ứng]</strong> ${match.cv_text}</p>
+              </div>
+          `,
+              )
+              .join("");
+
+            detailsHtml = `
+              <div class="matching-details" id="details-${index}" style="display: none;">
+                  <h4>Chi tiết kết quà tìm kiếm:</h4>
+                  ${matchesContent}
+              </div>
+          `;
+
+            buttonHtml = `<button class="btn-toggle-details" onclick="toggleMatchDetails(${index})">🔍 Xem chi tiết kết quả</button>`;
+          }
+
+          return `
+              <div class="job-card-item">
+                  <div>
+                      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                          <div class="job-item-title" style="margin-bottom: 0;">💼 ${job.title}</div>
+                          <span class="rank-badge">#${job.rank}</span>
+                      </div>
+                      <div class="job-item-meta"><strong>🏢 Công ty:</strong> ${job.company}</div>
+                      <div class="job-item-meta"><strong>📍 Địa điểm:</strong> ${job.location}</div>
+                  </div>
+                  ${detailsHtml}
+                  <div class="job-item-footer">
+                      <div>
+                          <span class="status-badge">Đang tuyển</span>
+                          ${buttonHtml}
+                      </div>
+                      ${link}
+                  </div>
+              </div>
+          `;
+        })
+        .join("");
     } catch (err) {
       showPlaceholder(jobsRecommendGrid, err.message, "state-error");
     } finally {
@@ -150,16 +192,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 2. LOGIC CHUYỂN TAB & PHÂN TRANG (TAB 2)
+  // ==================== 2. LOGIC CHUYỂN TAB & PHÂN TRANG ====================
   const tabRecommend = document.getElementById("tabRecommend");
   const tabAllJobs = document.getElementById("tabAllJobs");
   const pageRecommend = document.getElementById("pageRecommend");
   const pageAllJobs = document.getElementById("pageAllJobs");
+  const jobsGrid = document.getElementById("jobsGrid");
 
   let currentPage = 1,
     totalPages = 1;
   const limit = 9;
-  const jobsGrid = document.getElementById("jobsGrid");
 
   tabRecommend.addEventListener("click", () => {
     tabRecommend.classList.add("active");
@@ -181,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  // Hàm tải danh sách Jobs
+  // Hàm tải danh sách Jobs cho Tab 2
   async function loadJobs(page = 1) {
     showPlaceholder(jobsGrid, `Đang tải dữ liệu (Trang ${page})...`);
 
@@ -208,22 +250,21 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
 
-      // Render danh sách thẻ Job bằng innerHTML
       jobsGrid.innerHTML = data.data
         .map(
           (job) => `
-                <div class="job-card-item">
-                    <div>
-                        <div class="job-item-title">${job.title}</div>
-                        <div class="job-item-meta"><strong>Công ty:</strong> ${job.company}</div>
-                        <div class="job-item-meta"><strong>Địa điểm:</strong> ${job.location}</div>
-                    </div>
-                    <div class="job-item-footer">
-                        <span class="status-badge">Đang tuyển</span>
-                        ${isValidHttpUrl(job.url) ? `<a href="${job.url}" target="_blank" rel="noopener">Xem chi tiết</a>` : ""}
-                    </div>
-                </div>
-            `,
+          <div class="job-card-item">
+              <div>
+                  <div class="job-item-title">💼 ${job.title}</div>
+                  <div class="job-item-meta"><strong>🏢 Công ty:</strong> ${job.company}</div>
+                  <div class="job-item-meta"><strong>📍 Địa điểm:</strong> ${job.location}</div>
+              </div>
+              <div class="job-item-footer">
+                  <span class="status-badge">Đang tuyển</span>
+                  ${isValidHttpUrl(job.url) ? `<a href="${job.url}" target="_blank" rel="noopener">🔗 Xem chi tiết</a>` : ""}
+              </div>
+          </div>
+      `,
         )
         .join("");
     } catch (err) {
@@ -234,11 +275,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnPrevPage").addEventListener("click", () => {
     if (currentPage > 1) loadJobs(currentPage - 1);
   });
+
   document.getElementById("btnNextPage").addEventListener("click", () => {
     if (currentPage < totalPages) loadJobs(currentPage + 1);
   });
 
-  // 3. LOGIC CẬP NHẬT DỮ LIỆU (CRAWLER)
+  // ==================== 3. LOGIC CẬP NHẬT DỮ LIỆU (CRAWLER) ====================
   const btnUpdateJobs = document.getElementById("btnUpdateJobs");
   const updateStatusBanner = document.getElementById("updateStatusBanner");
   let pollInterval = null;
@@ -259,7 +301,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Lỗi server");
 
-        // Bắt đầu kiểm tra trạng thái (polling) mỗi 2 giây
         pollInterval = setInterval(async () => {
           const statusRes = await fetch("/api/jobs/update/status");
           const statusData = await statusRes.json();
@@ -279,7 +320,7 @@ document.addEventListener("DOMContentLoaded", () => {
               setTimeout(
                 () => (updateStatusBanner.style.display = "none"),
                 5000,
-              ); // Tự tắt sau 5s
+              );
               loadJobs(currentPage);
             }
           }

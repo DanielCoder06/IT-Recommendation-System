@@ -64,6 +64,7 @@ def recommend_jobs_for_cv(
     pdf_path: str | Path,
     exclude_senior: bool = True,
     top_k: int = settings.TOP_K,
+    return_details: bool = False,
 ) -> list[dict]:
     """
     Nhận file CV, phân tích và trả về danh sách việc làm đã xếp hạng.
@@ -126,6 +127,7 @@ def recommend_jobs_for_cv(
         sim_matrix = np.dot(jd_embs, cv_embeddings.T)
 
         # Với mỗi JD chunk, lấy similarity lớn nhất (CV chunk phù hợp nhất)
+        best_indices = np.argmax(sim_matrix, axis=1)
         best_similarities = np.max(sim_matrix, axis=1)
 
         chunk_matches = [{"similarity": float(sim)} for sim in best_similarities]
@@ -138,13 +140,14 @@ def recommend_jobs_for_cv(
             parse_datetime(job.get("created_at")),
             now,
         )
+
         ranked_score = score["job_score"] * recency_multiplier(
             age_days,
             recency_days=settings.MATCH_RECENCY_DAYS,
             floor=settings.RECENCY_SCORE_FLOOR,
         )
 
-        results.append({
+        job_result = {
             "id": job.get("id"),
             "title": job.get("title") or "N/A",
             "company": job.get("company") or "N/A",
@@ -152,7 +155,20 @@ def recommend_jobs_for_cv(
             "experience": job.get("experience") or "N/A",
             "url": job.get("url") or "",
             "_score": ranked_score,
-        })
+        }
+
+        if return_details:
+            details = []
+            for i, cv_idx in enumerate(best_indices):
+                details.append({
+                    "jd_text": jd_chunks[i]["text"],
+                    "cv_text": cv_chunks_text[cv_idx],
+                    "similarity": float(best_similarities[i])
+                })
+            details.sort(key=lambda x: x["similarity"], reverse=True)
+            job_result["_details"] = details
+
+        results.append(job_result)
 
     # 5. Xếp hạng theo điểm giảm dần, lấy top_k
     results.sort(key=lambda x: x["_score"], reverse=True)

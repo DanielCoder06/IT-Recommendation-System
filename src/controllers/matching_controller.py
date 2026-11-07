@@ -35,7 +35,12 @@ def match_cv(file: UploadFile = File(...), exclude_senior: bool = Form(True), to
         if page_count > settings.MAX_PAGES:
             raise HTTPException(400, f"CV có {page_count} trang, vượt quá {settings.MAX_PAGES} trang.")
 
-        recommended = recommend_jobs_for_cv(pdf_path=tmp_path, exclude_senior=exclude_senior, top_k=top_k)
+        recommended = recommend_jobs_for_cv(
+            pdf_path=tmp_path, 
+            exclude_senior=exclude_senior, 
+            top_k=top_k, 
+            return_details=True
+        )
 
         for job in recommended:
             job.pop("_score", None)
