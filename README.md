@@ -1,47 +1,97 @@
-# IT Skill Matching & Recommendation System
+# RSIT - IT Recommendation System
 
-Hệ thống gợi ý việc làm IT thông minh dựa trên phân tích cấu trúc và ngữ nghĩa (Semantic & Structural Analysis) của CV ứng viên, so khớp với các bản mô tả công việc (Job Description) từ cơ sở dữ liệu.
+Hệ thống gợi ý việc làm IT dựa trên phân tích ngữ nghĩa (Semantic Similarity).
 
-## 🌟 Tính năng chính
+RSIT cho phép người dùng tải CV định dạng PDF, phân tích nội dung và so khớp với dữ liệu tuyển dụng để tìm ra những công việc phù hợp nhất.
 
-- **Crawler tự động:** Thu thập dữ liệu việc làm IT mới nhất từ các nguồn quốc tế (Arbeitnow, Jobicy).
-- **Xử lý CV/JD thông minh:**
-  - Trích xuất văn bản từ PDF (hỗ trợ layout 1 cột và 2 cột).
-  - Nhận diện cấu trúc Section (SKILLS, EXPERIENCE, PROJECTS...).
-  - Phân loại nội dung JD (REQUIREMENT, RESPONSIBILITY).
-- **Semantic Chunking:** Cắt nhỏ văn bản dựa trên sự thay đổi ngữ nghĩa (sử dụng Cosine Distance) thay vì cắt máy móc theo số từ.
-- **AI Matching (pgvector):**
-  - Mã hóa văn bản thành vector 384 chiều (`all-MiniLM-L6-v2`).
-  - Tính điểm tương đồng Cosine với thuật toán Top-K Requirements.
-  - Áp dụng hệ số suy giảm thời gian (Recency Decay) ưu tiên tin mới.
-- **Web App (FastAPI):** Giao diện kéo thả CV, phân trang danh sách công việc và cập nhật dữ liệu trực quan.
+## 🚀 Công nghệ sử dụng
 
-## 🛠 Tech Stack
+- **Backend:** Python, FastAPI, Uvicorn.
+- **Frontend:** HTML, CSS, Vanilla JavaScript.
+- **Database:** PostgreSQL, pgvector.
+- **AI/ML:** Sentence Transformers (`all-MiniLM-L6-v2`).
+- **PDF Processing:** PyMuPDF.
+- **Deployment:** Docker, Docker Compose.
 
-- **Backend:** Python 3.10+, FastAPI, Uvicorn.
-- **Database:** PostgreSQL 16 + `pgvector` (HNSW Index).
-- **AI/ML:** SentenceTransformers, PyTorch, NumPy.
-- **Frontend:** HTML5, CSS3, Vanilla JavaScript.
+## ⚙️ Cài đặt
 
-## 📁 Cấu trúc thư mục
+**1. Clone dự án**
 
-```text
-.
-├── data/                  # Chứa file keywords.yaml và dữ liệu test
-├── docker-compose.yml     # Cấu hình Docker cho PostgreSQL
-├── public/                # Giao diện Frontend (HTML/CSS/JS)
-├── scripts/               # Các công cụ CLI (Backfill, Inspect, Test)
-├── src/
-│   ├── config/            # Cấu hình Pydantic Settings
-│   ├── controllers/       # FastAPI Routers (Jobs, Matching)
-│   ├── models/            # Entities và Repositories (DB queries)
-│   ├── services/
-│   │   ├── embeddings/    # Model AI và hàm encode vector
-│   │   ├── matching/      # Lõi Matching, Scoring và Indexing
-│   │   ├── processing/    # Bóc tách CV, xử lý JD, Chunking
-│   │   └── sources/       # Crawlers (Arbeitnow, Jobicy)
-│   └── utils/             # Các hàm dùng chung
-├── server.py              # Entry point khởi chạy server
-├── requirements.txt       # Danh sách thư viện
-└── .env.example           # Mẫu biến môi trường
+```bash
+git clone <repository-url>
+cd IT-Recommendation-System
 ```
+
+**2. Tạo file môi trường**
+
+```bash
+cp .env.example .env
+```
+
+**3. Khởi động Database**
+
+```bash
+docker compose up -d postgres
+```
+
+**4. Tạo môi trường Python**
+
+Linux / macOS:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+**5. Khởi chạy hệ thống**
+
+```bash
+python server.py
+```
+
+Truy cập: http://localhost:8000
+
+## 📌 Chức năng chính
+
+- Thu thập việc làm từ Jobicy và Arbeitnow.
+- Trích xuất và phân tích nội dung CV.
+- Phân tích và chia nhỏ nội dung JD.
+- Tạo vector embedding bằng Sentence Transformers.
+- So khớp CV với Requirements và Responsibilities của JD.
+- Xếp hạng và đề xuất Top-K công việc phù hợp.
+
+## 🐳 Docker Commands
+
+```bash
+# Khởi động Database
+docker compose start postgres
+
+# Dừng Database
+docker compose stop postgres
+
+# Xem trạng thái
+docker compose ps
+
+# Xem log
+docker compose logs -f postgres
+
+# Xóa Database và dữ liệu
+docker compose down -v
+```
+
+**Lưu ý:** Lệnh `docker compose down -v` sẽ xóa dữ liệu database được lưu trong volume.
+
+---
+
+**Developed by:** [Nguyễn Minh Khôi]
+
+**_Đồ án Niên Luận Cơ Sở Ngành_**
