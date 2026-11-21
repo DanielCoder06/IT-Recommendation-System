@@ -57,11 +57,3 @@ def apply_schema(connection) -> None:
             CREATE INDEX IF NOT EXISTS idx_job_chunks_category ON job_chunks(category);
             """
         )
-
-        # HNSW cosine index cho vector search
-        cur.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_job_chunks_embedding
-                ON job_chunks USING hnsw (embedding vector_cosine_ops);
-            """
-        )
